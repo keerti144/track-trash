@@ -7,6 +7,7 @@ function Navbar() {
   const { logout, user } = useContext(AuthContext);
   const navigate = useNavigate();
   const location = useLocation();
+  const userRole = localStorage.getItem("userRole") || "user";
 
   // Don't show navbar on login page
   if (location.pathname === "/login") {
@@ -43,6 +44,11 @@ function Navbar() {
           <li className="nav-item">
             <Link to="/notifications" className="nav-link">Notifications</Link>
           </li>
+          {userRole === "admin" && (
+            <li className="nav-item">
+              <Link to="/admin" className="nav-link admin-link">⚙️ Admin</Link>
+            </li>
+          )}
         </ul>
 
         <div className="nav-user">

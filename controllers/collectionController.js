@@ -107,14 +107,29 @@ exports.getAllCollections = (req, res) => {
 // =====================================
 exports.getMyCollections = (req, res) => {
   const collectorId = req.user.id;
+  console.log(`Fetching collections for collector ID: ${collectorId}`);
 
   db.query(
-    `SELECT * FROM collections
-     WHERE collector_id = ? AND status = 'pending'
-     ORDER BY id DESC`,
+    `SELECT 
+      c.id,
+      c.bin_id,
+      c.collector_id,
+      c.status,
+      b.location,
+      b.capacity,
+      b.current_fill,
+      b.status as bin_status
+     FROM collections c
+     LEFT JOIN bins b ON c.bin_id = b.id
+     WHERE c.collector_id = ? AND c.status = 'pending'
+     ORDER BY c.id DESC`,
     [collectorId],
     (err, results) => {
-      if (err) return res.status(500).json(err);
+      if (err) {
+        console.error("Error fetching collections:", err);
+        return res.status(500).json({ message: "Failed to fetch collections", error: err.message });
+      }
+      console.log(`Found ${results.length} pending collections for collector ${collectorId}`);
       res.json(results);
     }
   );

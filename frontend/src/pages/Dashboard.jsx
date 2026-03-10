@@ -19,7 +19,13 @@ function Dashboard() {
   const fetchStats = async () => {
     try {
       const res = await api.get("/analytics/bins");
-      setStats(res.data);
+      // Map backend field names to frontend state
+      setStats({
+        total: res.data.total_bins || 0,
+        full: res.data.full_bins || 0,
+        active: res.data.active_bins || 0,
+        empty: res.data.empty_bins || 0
+      });
       setLoading(false);
     } catch (err) {
       if (err.response?.status === 403) {

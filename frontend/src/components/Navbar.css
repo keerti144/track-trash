@@ -60,6 +60,17 @@
   transform: translateY(-2px);
 }
 
+.nav-link.admin-link {
+  background-color: rgba(255, 193, 7, 0.3);
+  border: 1px solid rgba(255, 193, 7, 0.6);
+  font-weight: 600;
+}
+
+.nav-link.admin-link:hover {
+  background-color: rgba(255, 193, 7, 0.5);
+  border-color: rgba(255, 193, 7, 1);
+}
+
 .nav-user {
   display: flex;
   align-items: center;

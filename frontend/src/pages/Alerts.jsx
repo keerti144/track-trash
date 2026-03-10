@@ -17,7 +17,11 @@ function Alerts() {
       setAlerts(res.data);
       setLoading(false);
     } catch (err) {
-      setError("Failed to load alerts");
+      if (err.response?.status === 403) {
+        setError("⛔ System alerts are only available to administrators");
+      } else {
+        setError("Failed to load alerts");
+      }
       setLoading(false);
       console.error(err);
     }
@@ -37,7 +41,20 @@ function Alerts() {
   };
 
   if (loading) return <div className="alerts-container"><p>Loading alerts...</p></div>;
-  if (error) return <div className="alerts-container"><p className="error">{error}</p></div>;
+  if (error) {
+    return (
+      <div className="alerts-container">
+        <div className="page-header">
+          <h1>⚠️ Alerts</h1>
+          <p>Monitor critical bin and system alerts</p>
+        </div>
+        <div className="permission-message">
+          <p>{error}</p>
+          <a href="/dashboard" className="btn btn-primary">← Back to Dashboard</a>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="alerts-container">

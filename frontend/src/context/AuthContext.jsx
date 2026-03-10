@@ -11,10 +11,16 @@ export function AuthProvider({ children }) {
   useEffect(() => {
     const storedToken = localStorage.getItem("token");
     const storedUser = localStorage.getItem("user");
+    const storedRole = localStorage.getItem("userRole");
     
     if (storedToken && storedUser) {
+      const userData = JSON.parse(storedUser);
+      // Restore role from localStorage if available
+      if (storedRole) {
+        userData.role = storedRole;
+      }
       setToken(storedToken);
-      setUser(JSON.parse(storedUser));
+      setUser(userData);
     }
     setLoading(false);
   }, []);
@@ -35,11 +41,12 @@ export function AuthProvider({ children }) {
       }
 
       const data = await response.json();
-      const userData = { email, id: data.id };
+      const userData = { email, id: data.id, role: data.role };
 
       // Save to localStorage
       localStorage.setItem("token", data.token);
       localStorage.setItem("user", JSON.stringify(userData));
+      localStorage.setItem("userRole", data.role);
 
       // Update state
       setToken(data.token);
@@ -54,6 +61,7 @@ export function AuthProvider({ children }) {
   const logout = () => {
     localStorage.removeItem("token");
     localStorage.removeItem("user");
+    localStorage.removeItem("userRole");
     setToken(null);
     setUser(null);
   };

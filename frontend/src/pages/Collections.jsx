@@ -29,7 +29,11 @@ function Collections() {
       setCollections(res.data);
       setLoading(false);
     } catch (err) {
-      setError("Failed to load collections");
+      if (err.response?.status === 403) {
+        setError("⛔ Collections are managed by administrators and waste collectors");
+      } else {
+        setError("Failed to load collections");
+      }
       setLoading(false);
       console.error(err);
     }
@@ -60,7 +64,20 @@ function Collections() {
   };
 
   if (loading) return <div className="collections-container"><p>Loading collections...</p></div>;
-  if (error) return <div className="collections-container"><p className="error">{error}</p></div>;
+  if (error) {
+    return (
+      <div className="collections-container">
+        <div className="page-header">
+          <h1>🚚 Collections</h1>
+          <p>Track and manage waste collection assignments</p>
+        </div>
+        <div className="permission-message">
+          <p>{error}</p>
+          <a href="/dashboard" className="btn btn-primary">← Back to Dashboard</a>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="collections-container">
@@ -82,7 +99,7 @@ function Collections() {
                 <div className="collection-info">
                   <h3>Collection #{collection.id}</h3>
                   <p className="collection-details">
-                    Bin #{collection.binId} • Collector: {collection.collectorName || "Unassigned"}
+                    Bin #{collection.bin_id} • {collection.location || "Location not set"}
                   </p>
                 </div>
                 <span className="collection-status">{collection.status || "Pending"}</span>
@@ -91,22 +108,20 @@ function Collections() {
               <div className="collection-body">
                 <div className="info-grid">
                   <div className="info-item">
-                    <span className="info-label">Scheduled Date</span>
-                    <span className="info-value">
-                      {collection.scheduledDate ? new Date(collection.scheduledDate).toLocaleDateString() : "Not set"}
-                    </span>
-                  </div>
-                  <div className="info-item">
                     <span className="info-label">Location</span>
                     <span className="info-value">{collection.location || "N/A"}</span>
                   </div>
                   <div className="info-item">
-                    <span className="info-label">Weight Collected</span>
-                    <span className="info-value">{collection.weightCollected || "0"} kg</span>
+                    <span className="info-label">Bin Capacity</span>
+                    <span className="info-value">{collection.capacity || "0"} L</span>
                   </div>
                   <div className="info-item">
-                    <span className="info-label">Route</span>
-                    <span className="info-value">{collection.route || "N/A"}</span>
+                    <span className="info-label">Current Fill</span>
+                    <span className="info-value">{collection.current_fill || "0"}%</span>
+                  </div>
+                  <div className="info-item">
+                    <span className="info-label">Status</span>
+                    <span className="info-value">{collection.bin_status || "Unknown"}</span>
                   </div>
                 </div>
               </div>

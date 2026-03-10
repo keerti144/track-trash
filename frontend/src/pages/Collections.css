@@ -202,6 +202,27 @@
   margin: 20px;
 }
 
+.permission-message {
+  background-color: var(--light-green);
+  border: 2px solid var(--primary-green);
+  border-radius: 12px;
+  padding: 40px 30px;
+  text-align: center;
+  margin: 40px 0;
+}
+
+.permission-message p {
+  font-size: 18px;
+  color: var(--primary-green);
+  margin-bottom: 30px;
+  font-weight: 500;
+}
+
+.permission-message .btn {
+  display: inline-block;
+  margin-top: 10px;
+}
+
 @media (max-width: 768px) {
   .collection-header {
     flex-wrap: wrap;

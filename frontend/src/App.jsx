@@ -10,6 +10,7 @@ import Alerts from "./pages/Alerts";
 import Collections from "./pages/Collections";
 import Issues from "./pages/Issues";
 import Notifications from "./pages/Notifications";
+import AdminPanel from "./pages/AdminPanel";
 import "./App.css";
 
 function App() {
@@ -67,6 +68,14 @@ function App() {
               element={
                 <ProtectedRoute>
                   <Notifications />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/admin"
+              element={
+                <ProtectedRoute>
+                  <AdminPanel />
                 </ProtectedRoute>
               }
             />
