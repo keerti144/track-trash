@@ -2,7 +2,6 @@ require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
 const db = require("./config/db");
-
 // ========================
 // IMPORT ROUTES (PHASE 1 + 2 + 3)
 // ========================
@@ -73,7 +72,7 @@ app.get("/", (req, res) => {
 // ========================
 // START SERVER
 // ========================
-const PORT = 5000;
+const PORT = process.env.PORT || 5001;
 server.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });

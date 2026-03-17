@@ -13,17 +13,17 @@ function Bins() {
     fetchBins();
   }, []);
 
-  const fetchBins = async () => {
-    try {
-      const res = await api.get("/bins");
-      setBins(res.data);
-      setLoading(false);
-    } catch (err) {
-      setError("Failed to load bins");
-      setLoading(false);
-      console.error(err);
-    }
-  };
+const fetchBins = async () => {
+  try {
+    const res = await api.get("/bins");
+    setBins(res.data);
+    setLoading(false);
+  } catch (err) {
+    setError("Failed to load bins");
+    setLoading(false);
+    console.error(err);
+  }
+};
 
   const handleUpdateFill = async (id, currentFill) => {
     try {
@@ -67,7 +67,7 @@ function Bins() {
 
   if (loading) return <div className="bins-container"><p>Loading bins...</p></div>;
   if (error) return <div className="bins-container"><p className="error">{error}</p></div>;
-  if (bins.length === 0) return <div className="bins-container"><p>No bins found</p></div>;
+  if (!bins || bins.length === 0) return <div className="bins-container"><p>No bins found</p></div>;
 
   return (
     <div className="bins-container">
