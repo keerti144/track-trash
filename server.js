@@ -14,7 +14,7 @@ const issueRoutes = require("./routes/issueRoutes");        // Phase 2
 const notificationRoutes = require("./routes/notificationRoutes"); // Phase 2
 const analyticsRoutes = require("./routes/analyticsRoutes"); // Phase 2
 const userRoutes = require("./routes/userRoutes");          // User management
-
+const mapIssueRoutes = require("./routes/mapIssueRoutes");
 // ⭐ Phase 3 Routes
 const predictionRoutes = require("./routes/predictionRoutes");
 const routeRoutes = require("./routes/routeRoutes");
@@ -54,6 +54,7 @@ app.use("/api/sensor", sensorRoutes);
 app.use("/api/alerts", alertRoutes);
 app.use("/api/collections", collectionRoutes);
 app.use("/api/issues", issueRoutes);
+app.use("/api/map-issues", mapIssueRoutes);
 app.use("/api/notifications", notificationRoutes);
 app.use("/api/analytics", analyticsRoutes);
 app.use("/api/users", userRoutes);

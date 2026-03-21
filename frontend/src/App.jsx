@@ -11,6 +11,7 @@ import Collections from "./pages/Collections";
 import Issues from "./pages/Issues";
 import Notifications from "./pages/Notifications";
 import AdminPanel from "./pages/AdminPanel";
+import MapPage from "./pages/Map";
 import "./App.css";
 
 function App() {
@@ -36,6 +37,14 @@ function App() {
               element={
                 <ProtectedRoute>
                   <Bins />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/map"
+              element={
+                <ProtectedRoute>
+                  <MapPage />
                 </ProtectedRoute>
               }
             />

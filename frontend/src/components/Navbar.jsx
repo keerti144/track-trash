@@ -30,11 +30,14 @@ function Navbar() {
             <Link to="/" className="nav-link">Dashboard</Link>
           </li>
           <li className="nav-item">
-            <Link to="/bins" className="nav-link">Bins</Link>
-          </li>
-          <li className="nav-item">
-            <Link to="/alerts" className="nav-link">Alerts</Link>
-          </li>
+  <Link to="/bins" className="nav-link">Bins</Link>
+</li>
+<li className="nav-item">
+  <Link to="/map" className="nav-link">Map</Link>
+</li>
+<li className="nav-item">
+  <Link to="/alerts" className="nav-link">Alerts</Link>
+</li>
           <li className="nav-item">
             <Link to="/collections" className="nav-link">Collections</Link>
           </li>
