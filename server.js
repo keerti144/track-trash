@@ -82,6 +82,7 @@ function initSerialBridge() {
   }
 }
 
+
 initSerialBridge();
 
 app.use(cors());

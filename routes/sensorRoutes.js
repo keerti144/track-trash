@@ -1,8 +1,9 @@
 const express = require("express");
 const router = express.Router();
-const sensorAuth = require("../middleware/sensorAuth");
+
 const { updateSensorData } = require("../controllers/sensorController");
 
-router.post("/update", sensorAuth, updateSensorData);
+// POST /api/sensor
+router.post("/", updateSensorData);
 
 module.exports = router;

@@ -1,17 +1,32 @@
 const db = require("../config/db");
 
 function normalizeFromDistance(distanceCm) {
-  if (distanceCm < 15) {
-    return { fillLevel: 95, sensorStatus: "FULL", binStatus: "full" };
+  const MAX_HEIGHT = 40; // adjust to your bin height
+
+  let fill = ((MAX_HEIGHT - distanceCm) / MAX_HEIGHT) * 100;
+
+  if (fill < 0) fill = 0;
+  if (fill > 100) fill = 100;
+
+  fill = Math.round(fill);
+
+  let sensorStatus = "EMPTY";
+  let binStatus = "empty";
+
+  if (fill >= 80) {
+    sensorStatus = "FULL";
+    binStatus = "full";
+  } else if (fill > 0) {
+    sensorStatus = "HALF";
+    binStatus = "active";
   }
 
-  if (distanceCm < 40) {
-    return { fillLevel: 50, sensorStatus: "HALF", binStatus: "active" };
-  }
-
-  return { fillLevel: 0, sensorStatus: "EMPTY", binStatus: "empty" };
+  return {
+    fillLevel: fill,
+    sensorStatus,
+    binStatus,
+  };
 }
-
 function normalizeFromFill(fillLevel) {
   if (fillLevel >= 80) {
     return { fillLevel, sensorStatus: "FULL", binStatus: "full" };
@@ -23,7 +38,6 @@ function normalizeFromFill(fillLevel) {
 
   return { fillLevel: 0, sensorStatus: "EMPTY", binStatus: "empty" };
 }
-
 function persistSensorReading(payload, io) {
   return new Promise((resolve, reject) => {
     const { bin_id, fill_level, distance_cm, status } = payload;
