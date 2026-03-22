@@ -1,56 +1,96 @@
 require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
-const db = require("./config/db");
-// ========================
-// IMPORT ROUTES (PHASE 1 + 2 + 3)
-// ========================
+const http = require("http");
+const { Server } = require("socket.io");
+const { SerialPort } = require("serialport");
+const { ReadlineParser } = require("@serialport/parser-readline");
+
 const authRoutes = require("./routes/authRoutes");
-const binRoutes = require("./routes/binRoutes");            // Phase 1
-const sensorRoutes = require("./routes/sensorRoutes");      // Phase 1
-const alertRoutes = require("./routes/alertRoutes");        // Phase 2
-const collectionRoutes = require("./routes/collectionRoutes"); // Phase 2
-const issueRoutes = require("./routes/issueRoutes");        // Phase 2
-const notificationRoutes = require("./routes/notificationRoutes"); // Phase 2
-const analyticsRoutes = require("./routes/analyticsRoutes"); // Phase 2
-const userRoutes = require("./routes/userRoutes");          // User management
+const binRoutes = require("./routes/binRoutes");
+const sensorRoutes = require("./routes/sensorRoutes");
+const alertRoutes = require("./routes/alertRoutes");
+const collectionRoutes = require("./routes/collectionRoutes");
+const issueRoutes = require("./routes/issueRoutes");
+const notificationRoutes = require("./routes/notificationRoutes");
+const analyticsRoutes = require("./routes/analyticsRoutes");
+const userRoutes = require("./routes/userRoutes");
 const mapIssueRoutes = require("./routes/mapIssueRoutes");
-// ⭐ Phase 3 Routes
 const predictionRoutes = require("./routes/predictionRoutes");
 const routeRoutes = require("./routes/routeRoutes");
+const { persistSensorReading } = require("./controllers/sensorController");
 
-// ========================
-// CREATE EXPRESS APP FIRST
-// ========================
 const app = express();
-
-// ========================
-// SOCKET.IO SETUP (PHASE 3)
-// ========================
-const http = require("http");
 const server = http.createServer(app);
-const io = require("socket.io")(server, {
-  cors: { origin: "*" }
+const io = new Server(server, {
+  cors: { origin: "*" },
 });
 
 app.set("io", io);
 
-// ========================
-// MIDDLEWARE
-// ========================
+function initSerialBridge() {
+  const serialPath = process.env.SERIAL_PORT;
+  const serialBinId = Number(process.env.SERIAL_BIN_ID || 1);
+
+  if (!serialPath) {
+    console.log("Serial bridge disabled. Set SERIAL_PORT in .env to enable hardware stream.");
+    return;
+  }
+
+  try {
+    const port = new SerialPort({
+      path: serialPath,
+      baudRate: 115200,
+    });
+
+    const parser = port.pipe(new ReadlineParser({ delimiter: "\n" }));
+
+    port.on("open", () => {
+      console.log(`Serial bridge connected on ${serialPath}`);
+    });
+
+    port.on("error", (error) => {
+      console.error(`Serial bridge error on ${serialPath}:`, error.message);
+    });
+
+    parser.on("data", async (data) => {
+      console.log(data);
+      const match = data.match(/Distance:\s*([\d.]+).*Status:\s*(\w+)/i);
+
+      if (!match) {
+        return;
+      }
+
+      const distance = Number(match[1]);
+      const status = match[2].toUpperCase();
+
+      try {
+        await persistSensorReading(
+          {
+            bin_id: serialBinId,
+            distance_cm: distance,
+            status,
+          },
+          io
+        );
+      } catch (error) {
+        console.error("Failed to persist serial sensor reading:", error.message);
+      }
+    });
+  } catch (error) {
+    console.error(`Unable to start serial bridge on ${serialPath}:`, error.message);
+  }
+}
+
+initSerialBridge();
+
 app.use(cors());
 app.use(express.json());
+app.use(express.static("public"));
 
-// ========================
-// ROUTE MOUNTING
-// ========================
-
-// 🔹 Phase 1
 app.use("/api/auth", authRoutes);
 app.use("/api/bins", binRoutes);
 app.use("/api/sensor", sensorRoutes);
-
-// 🔹 Phase 2
 app.use("/api/alerts", alertRoutes);
 app.use("/api/collections", collectionRoutes);
 app.use("/api/issues", issueRoutes);
@@ -58,21 +98,13 @@ app.use("/api/map-issues", mapIssueRoutes);
 app.use("/api/notifications", notificationRoutes);
 app.use("/api/analytics", analyticsRoutes);
 app.use("/api/users", userRoutes);
-
-// 🔹 Phase 3
 app.use("/api/predictions", predictionRoutes);
 app.use("/api/routes", routeRoutes);
 
-// ========================
-// ROOT CHECK
-// ========================
 app.get("/", (req, res) => {
   res.send("Track Trash Backend is running");
 });
 
-// ========================
-// START SERVER
-// ========================
 const PORT = process.env.PORT || 5001;
 server.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);

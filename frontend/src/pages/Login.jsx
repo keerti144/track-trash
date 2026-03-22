@@ -1,5 +1,5 @@
-import { useState, useContext } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import { useContext, useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import { AuthContext } from "../context/AuthContext";
 import "./Login.css";
 
@@ -11,8 +11,8 @@ function Login() {
   const { login } = useContext(AuthContext);
   const navigate = useNavigate();
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const handleSubmit = async (event) => {
+    event.preventDefault();
     setError("");
     setLoading(true);
 
@@ -26,65 +26,64 @@ function Login() {
   };
 
   return (
-    <div className="login-page">
-      <div className="login-container">
-        <div className="login-card">
-          <div className="login-header">
-            <div className="logo-icon">🗑️</div>
-            <h1>Track Trash</h1>
-            <p>Smart Waste Management System</p>
-          </div>
+    <div className="auth-page">
+      <div className="auth-layout">
+        <section className="auth-panel auth-panel-brand">
+          <span className="auth-kicker">Track Trash</span>
+          <h1>TrackTrash: Smarter tracking for cleaner cities.</h1>
+          <p>
+            Monitor bins, route collectors, and handle reports.
+          </p>
+        </section>
 
-          <form onSubmit={handleSubmit} className="login-form">
-            <div className="form-group">
-              <label htmlFor="email">Email Address</label>
-              <input
-                type="email"
-                id="email"
-                placeholder="Enter your email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                autoComplete="email"
-                required
-                disabled={loading}
-              />
+        <section className="auth-panel auth-panel-form">
+          <div className="auth-form-shell">
+            <span className="auth-eyebrow">Welcome back</span>
+            <h2>Sign in to your workspace</h2>
+            <p>Use your registered email and password to continue.</p>
+
+            <form onSubmit={handleSubmit} className="auth-form">
+              <div className="form-group">
+                <label htmlFor="email">Email address</label>
+                <input
+                  type="email"
+                  id="email"
+                  placeholder="you@example.com"
+                  value={email}
+                  onChange={(event) => setEmail(event.target.value)}
+                  autoComplete="email"
+                  required
+                  disabled={loading}
+                />
+              </div>
+
+              <div className="form-group">
+                <label htmlFor="password">Password</label>
+                <input
+                  type="password"
+                  id="password"
+                  placeholder="Enter your password"
+                  value={password}
+                  onChange={(event) => setPassword(event.target.value)}
+                  autoComplete="current-password"
+                  required
+                  disabled={loading}
+                />
+              </div>
+
+              {error && <div className="error-message">{error}</div>}
+
+              <button type="submit" className="btn-login" disabled={loading}>
+                {loading ? "Signing in..." : "Sign in"}
+              </button>
+            </form>
+
+            <div className="auth-footer">
+              <span>New here?</span>
+              <Link to="/register">Create an account</Link>
             </div>
-
-            <div className="form-group">
-              <label htmlFor="password">Password</label>
-              <input
-                type="password"
-                id="password"
-                placeholder="Enter your password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                autoComplete="current-password"
-                required
-                disabled={loading}
-              />
-            </div>
-
-            {error && <div className="error-message">{error}</div>}
-
-            <button
-              type="submit"
-              className="btn-login"
-              disabled={loading}
-            >
-              {loading ? "Logging in..." : "Login"}
-            </button>
-          </form>
-
-          <div className="login-footer">
-            <p>Don't have an account? <Link to="/register">Register here</Link></p>
           </div>
-        </div>
-
-        <div className="login-background">
-          <div className="shape shape-1"></div>
-          <div className="shape shape-2"></div>
-          <div className="shape shape-3"></div>
-        </div>
+        </section>
       </div>
     </div>
   );

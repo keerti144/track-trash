@@ -1,115 +1,152 @@
 const db = require("../config/db");
 
-exports.updateSensorData = (req, res) => {
-  const { bin_id, fill_level } = req.body;
-
-  if (bin_id === undefined || fill_level === undefined) {
-    return res.status(400).json({
-      message: "bin_id and fill_level required"
-    });
+function normalizeFromDistance(distanceCm) {
+  if (distanceCm < 15) {
+    return { fillLevel: 95, sensorStatus: "FULL", binStatus: "full" };
   }
 
-  // Decide new status
-  let newStatus = "active";
-  if (fill_level >= 80) newStatus = "full";
-  else if (fill_level === 0) newStatus = "empty";
+  if (distanceCm < 40) {
+    return { fillLevel: 50, sensorStatus: "HALF", binStatus: "active" };
+  }
 
-  // 1️⃣ Get previous status first (prevents spam)
-  db.query(
-    "SELECT status FROM bins WHERE id = ?",
-    [bin_id],
-    (errPrev, prevRows) => {
-      if (errPrev) return res.status(500).json(errPrev);
+  return { fillLevel: 0, sensorStatus: "EMPTY", binStatus: "empty" };
+}
 
-      if (prevRows.length === 0) {
-        return res.status(404).json({ message: "Bin not found" });
-      }
+function normalizeFromFill(fillLevel) {
+  if (fillLevel >= 80) {
+    return { fillLevel, sensorStatus: "FULL", binStatus: "full" };
+  }
+
+  if (fillLevel > 0) {
+    return { fillLevel, sensorStatus: "HALF", binStatus: "active" };
+  }
+
+  return { fillLevel: 0, sensorStatus: "EMPTY", binStatus: "empty" };
+}
+
+function persistSensorReading(payload, io) {
+  return new Promise((resolve, reject) => {
+    const { bin_id, fill_level, distance_cm, status } = payload;
+
+    if (bin_id === undefined || (fill_level === undefined && distance_cm === undefined)) {
+      reject(new Error("bin_id and either fill_level or distance_cm are required"));
+      return;
+    }
+
+    const parsedDistance =
+      distance_cm !== undefined && distance_cm !== null ? Number(distance_cm) : null;
+    const parsedFill =
+      fill_level !== undefined && fill_level !== null ? Number(fill_level) : null;
+
+    let normalized;
+
+    if (parsedDistance !== null && !Number.isNaN(parsedDistance)) {
+      normalized = normalizeFromDistance(parsedDistance);
+    } else if (parsedFill !== null && !Number.isNaN(parsedFill)) {
+      normalized = normalizeFromFill(parsedFill);
+    } else {
+      reject(new Error("Invalid sensor payload"));
+      return;
+    }
+
+    const fillLevel = normalized.fillLevel;
+    const sensorStatus = status || normalized.sensorStatus;
+    const newStatus = normalized.binStatus;
+
+    db.query("SELECT status FROM bins WHERE id = ?", [bin_id], (errPrev, prevRows) => {
+      if (errPrev) return reject(errPrev);
+      if (prevRows.length === 0) return reject(Object.assign(new Error("Bin not found"), { statusCode: 404 }));
 
       const previousStatus = prevRows[0].status;
 
-      // 2️⃣ Insert sensor data
       db.query(
-        "INSERT INTO sensor_data (bin_id, fill_level) VALUES (?, ?)",
-        [bin_id, fill_level],
-        (err1) => {
-          if (err1) {
-            console.error("Sensor insert error:", err1);
-            return res.status(500).json({ error: err1.message });
-          }
+        "INSERT INTO sensor_data (bin_id, fill_level, distance_cm, sensor_status) VALUES (?, ?, ?, ?)",
+        [bin_id, fillLevel, parsedDistance, sensorStatus],
+        (errInsert) => {
+          if (errInsert) return reject(errInsert);
 
-          // 3️⃣ Update bin
           db.query(
-            "UPDATE bins SET current_fill = ?, status = ? WHERE id = ?",
-            [fill_level, newStatus, bin_id],
-            (err2) => {
-              if (err2) {
-                console.error("Bin update error:", err2);
-                return res.status(500).json({ error: err2.message });
-              }
-              // 4️⃣ Create alert + notification ONLY if status changed to full
-              if (previousStatus !== "full" && newStatus === "full") {
+            `UPDATE bins
+             SET current_fill = ?, latest_distance_cm = ?, sensor_status = ?, status = ?
+             WHERE id = ?`,
+            [fillLevel, parsedDistance, sensorStatus, newStatus, bin_id],
+            (errUpdate) => {
+              if (errUpdate) return reject(errUpdate);
 
+              if (previousStatus !== "full" && newStatus === "full") {
                 db.query(
                   `INSERT INTO alerts (bin_id, alert_type, message, status)
                    VALUES (?, ?, ?, 'active')`,
                   [bin_id, "OVERFLOW", "Bin is full and needs collection"],
-                  (err3) => {
-                    if (err3) {
-                      console.error("Alert insert error:", err3);
+                  (errAlert) => {
+                    if (errAlert) {
+                      console.error("Alert insert error:", errAlert);
                     } else {
-
-                      // 🔔 Notify ALL admins
-                      db.query(
-                        "SELECT id FROM users WHERE role = 'admin'",
-                        (errAdmins, admins) => {
-                          if (!errAdmins && admins.length > 0) {
-                            admins.forEach(admin => {
-                              db.query(
-                                `INSERT INTO notifications (user_id, title, message, type)
-                                 VALUES (?, ?, ?, ?)`,
-                                [
-                                  admin.id,
-                                  "Bin Full Alert",
-                                  `Bin #${bin_id} is full and needs collection`,
-                                  "ALERT"
-                                ]
-                              );
-                            });
-                          }
+                      db.query("SELECT id FROM users WHERE role = 'admin'", (errAdmins, admins) => {
+                        if (!errAdmins && admins.length > 0) {
+                          admins.forEach((admin) => {
+                            db.query(
+                              `INSERT INTO notifications (user_id, title, message, type)
+                               VALUES (?, ?, ?, ?)`,
+                              [
+                                admin.id,
+                                "Bin Full Alert",
+                                `Bin #${bin_id} is full and needs collection`,
+                                "ALERT",
+                              ]
+                            );
+                          });
                         }
-                      );
+                      });
                     }
                   }
                 );
               }
-              //5️⃣ Auto-assign to collector if status changed to full
-              // Phase 4 TODO: integrate real autoAssign(bin_id)
-              if (previousStatus !== "full" && newStatus === "full") {
-                console.log(" Auto-assign collector triggered for bin:", bin_id);
-  
-              }
 
-              // 6 Auto-resolve alert if emptied
               if (newStatus === "empty") {
                 db.query(
-                  `UPDATE alerts 
+                  `UPDATE alerts
                    SET status = 'resolved'
                    WHERE bin_id = ? AND alert_type = 'OVERFLOW'`,
                   [bin_id]
                 );
               }
-              req.app.get("io").emit("live",{ bin_id, status:newStatus });
 
-              res.status(200).json({
+              const result = {
                 message: "Sensor data updated successfully",
-                bin_id,
-                fill_level,
-                status: newStatus
-              });
+                bin_id: Number(bin_id),
+                distance_cm: parsedDistance,
+                fill_level: fillLevel,
+                sensor_status: sensorStatus,
+                status: newStatus,
+              };
+
+              if (io) {
+                io.emit("sensorData", result);
+              }
+
+              resolve(result);
             }
           );
         }
       );
-    }
-  );
+    });
+  });
+}
+
+async function updateSensorData(req, res) {
+  try {
+    const result = await persistSensorReading(req.body, req.app.get("io"));
+    res.status(200).json(result);
+  } catch (error) {
+    const statusCode = error.statusCode || 500;
+    res.status(statusCode).json({
+      message: error.message || "Failed to update sensor data",
+    });
+  }
+}
+
+module.exports = {
+  updateSensorData,
+  persistSensorReading,
 };

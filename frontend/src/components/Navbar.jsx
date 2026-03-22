@@ -1,16 +1,41 @@
-import { useContext } from "react";
-import { Link, useNavigate, useLocation } from "react-router-dom";
+import { useContext, useEffect, useMemo, useState } from "react";
+import { Link, NavLink, useLocation, useNavigate } from "react-router-dom";
 import { AuthContext } from "../context/AuthContext";
 import "./Navbar.css";
 
 function Navbar() {
-  const { logout, user } = useContext(AuthContext);
+  const { logout, user, isAuthenticated } = useContext(AuthContext);
   const navigate = useNavigate();
   const location = useLocation();
-  const userRole = localStorage.getItem("userRole") || "user";
+  const [menuOpen, setMenuOpen] = useState(false);
 
-  // Don't show navbar on login page
-  if (location.pathname === "/login") {
+  useEffect(() => {
+    setMenuOpen(false);
+  }, [location.pathname]);
+
+  const navItems = useMemo(() => {
+    const role = user?.role || "user";
+    const items = [
+      { to: "/", label: "Dashboard" },
+      { to: "/bins", label: "Bins" },
+      { to: "/map", label: "Map" },
+      { to: "/alerts", label: "Alerts" },
+      { to: "/issues", label: "Issues" },
+      { to: "/notifications", label: "Notifications" },
+    ];
+
+    if (role === "admin" || role === "collector") {
+      items.splice(4, 0, { to: "/collections", label: "Collections" });
+    }
+
+    if (role === "admin") {
+      items.push({ to: "/admin", label: "Admin", admin: true });
+    }
+
+    return items;
+  }, [user?.role]);
+
+  if (!isAuthenticated) {
     return null;
   }
 
@@ -20,48 +45,59 @@ function Navbar() {
   };
 
   return (
-    <nav className="navbar">
+    <header className="navbar">
       <div className="navbar-container">
         <Link to="/" className="navbar-logo">
-          🗑️ Track Trash
+          <span className="navbar-logo-badge">TT</span>
+          <span className="navbar-logo-text">
+            <strong>Track Trash</strong>
+            <small>Smart waste operations</small>
+          </span>
         </Link>
-        <ul className="nav-menu">
-          <li className="nav-item">
-            <Link to="/" className="nav-link">Dashboard</Link>
-          </li>
-          <li className="nav-item">
-  <Link to="/bins" className="nav-link">Bins</Link>
-</li>
-<li className="nav-item">
-  <Link to="/map" className="nav-link">Map</Link>
-</li>
-<li className="nav-item">
-  <Link to="/alerts" className="nav-link">Alerts</Link>
-</li>
-          <li className="nav-item">
-            <Link to="/collections" className="nav-link">Collections</Link>
-          </li>
-          <li className="nav-item">
-            <Link to="/issues" className="nav-link">Issues</Link>
-          </li>
-          <li className="nav-item">
-            <Link to="/notifications" className="nav-link">Notifications</Link>
-          </li>
-          {userRole === "admin" && (
-            <li className="nav-item">
-              <Link to="/admin" className="nav-link admin-link">⚙️ Admin</Link>
-            </li>
-          )}
-        </ul>
 
-        <div className="nav-user">
-          {user && <span className="user-name">{user.email}</span>}
-          <button className="btn-logout" onClick={handleLogout}>
-            Logout
-          </button>
+        <button
+          className="navbar-toggle"
+          type="button"
+          aria-label="Toggle navigation menu"
+          aria-expanded={menuOpen}
+          onClick={() => setMenuOpen((value) => !value)}
+        >
+          <span />
+          <span />
+          <span />
+        </button>
+
+        <div className={`navbar-panel ${menuOpen ? "is-open" : ""}`}>
+          <nav className="nav-menu" aria-label="Primary">
+            {navItems.map((item) => (
+              <NavLink
+                key={item.to}
+                to={item.to}
+                end={item.to === "/"}
+                className={({ isActive }) =>
+                  `nav-link ${item.admin ? "nav-link-admin" : ""} ${isActive ? "is-active" : ""}`
+                }
+              >
+                {item.label}
+              </NavLink>
+            ))}
+          </nav>
+
+          <div className="nav-user">
+            <div className="user-chip">
+              <span className="user-avatar" aria-hidden="true">
+                👤
+              </span>
+              <span className="user-chip-label">{user?.role || "user"}</span>
+            </div>
+
+            <button className="btn-logout" type="button" onClick={handleLogout}>
+              Logout
+            </button>
+          </div>
         </div>
       </div>
-    </nav>
+    </header>
   );
 }
 

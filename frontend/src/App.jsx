@@ -18,17 +18,19 @@ function App() {
   return (
     <Router>
       <AuthProvider>
-        <Navbar />
-        <div style={{ minHeight: "calc(100vh - 60px)" }}>
+        <div className="app-shell">
+          <Navbar />
           <Routes>
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
-            
+
             <Route
               path="/"
               element={
                 <ProtectedRoute>
-                  <Dashboard />
+                  <main className="app-main">
+                    <Dashboard />
+                  </main>
                 </ProtectedRoute>
               }
             />
@@ -36,7 +38,9 @@ function App() {
               path="/bins"
               element={
                 <ProtectedRoute>
-                  <Bins />
+                  <main className="app-main">
+                    <Bins />
+                  </main>
                 </ProtectedRoute>
               }
             />
@@ -44,7 +48,9 @@ function App() {
               path="/map"
               element={
                 <ProtectedRoute>
-                  <MapPage />
+                  <main className="app-main">
+                    <MapPage />
+                  </main>
                 </ProtectedRoute>
               }
             />
@@ -52,7 +58,9 @@ function App() {
               path="/alerts"
               element={
                 <ProtectedRoute>
-                  <Alerts />
+                  <main className="app-main">
+                    <Alerts />
+                  </main>
                 </ProtectedRoute>
               }
             />
@@ -60,7 +68,9 @@ function App() {
               path="/collections"
               element={
                 <ProtectedRoute>
-                  <Collections />
+                  <main className="app-main">
+                    <Collections />
+                  </main>
                 </ProtectedRoute>
               }
             />
@@ -68,7 +78,9 @@ function App() {
               path="/issues"
               element={
                 <ProtectedRoute>
-                  <Issues />
+                  <main className="app-main">
+                    <Issues />
+                  </main>
                 </ProtectedRoute>
               }
             />
@@ -76,7 +88,9 @@ function App() {
               path="/notifications"
               element={
                 <ProtectedRoute>
-                  <Notifications />
+                  <main className="app-main">
+                    <Notifications />
+                  </main>
                 </ProtectedRoute>
               }
             />
@@ -84,7 +98,9 @@ function App() {
               path="/admin"
               element={
                 <ProtectedRoute>
-                  <AdminPanel />
+                  <main className="app-main">
+                    <AdminPanel />
+                  </main>
                 </ProtectedRoute>
               }
             />

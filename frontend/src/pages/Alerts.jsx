@@ -2,200 +2,160 @@ import { useEffect, useState } from "react";
 import api from "../services/api";
 import "./Alerts.css";
 
+function getSeverityFromAlert(alert) {
+  if (alert.alert_type === "OVERFLOW") {
+    return "critical";
+  }
+  if (alert.alert_type === "USER_ALERT") {
+    return "warning";
+  }
+  return "info";
+}
+
 function Alerts() {
   const [alerts, setAlerts] = useState([]);
   const [bins, setBins] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [error, setError] = useState("");
   const [userRole, setUserRole] = useState("user");
   const [showForm, setShowForm] = useState(false);
   const [formData, setFormData] = useState({
     bin_id: "",
     message: "",
-    description: "",
-    severity: "info"
   });
   const [formMessage, setFormMessage] = useState("");
 
   useEffect(() => {
     const role = localStorage.getItem("userRole") || "user";
     setUserRole(role);
-    
-    fetchAlerts();
+    fetchAlerts(role);
     fetchBins();
   }, []);
 
-  const fetchAlerts = async () => {
+  const fetchAlerts = async (role = userRole) => {
     try {
-      const role = localStorage.getItem("userRole") || "user";
-      let res;
-      
-      if (role === "admin") {
-        res = await api.get("/alerts");
-      } else {
-        res = await api.get("/alerts/my");
-      }
-      
-      setAlerts(res.data || []);
-      setLoading(false);
-      setError(null);
+      const response =
+        role === "admin" ? await api.get("/alerts") : await api.get("/alerts/my");
+      setAlerts(response.data || []);
+      setError("");
     } catch (err) {
       console.error("Error fetching alerts:", err);
-      setError("Failed to load alerts");
+      setError("Failed to load alerts.");
+    } finally {
       setLoading(false);
     }
   };
 
   const fetchBins = async () => {
     try {
-      const res = await api.get("/bins");
-      setBins(res.data || []);
+      const response = await api.get("/bins");
+      setBins(response.data || []);
     } catch (err) {
       console.error("Failed to load bins:", err);
     }
   };
 
-  const handleSubmitAlert = async (e) => {
-    e.preventDefault();
+  const handleSubmitAlert = async (event) => {
+    event.preventDefault();
     setFormMessage("");
 
-    if (!formData.bin_id || !formData.message) {
-      setFormMessage("❌ Bin and message are required");
+    if (!formData.bin_id || !formData.message.trim()) {
+      setFormMessage("Please select a bin and enter an alert message.");
       return;
     }
 
     try {
       await api.post("/alerts", {
-        bin_id: parseInt(formData.bin_id),
-        message: formData.message,
-        description: formData.description,
-        severity: formData.severity
+        bin_id: Number(formData.bin_id),
+        message: formData.message.trim(),
       });
 
-      setFormMessage("✅ Alert sent successfully!");
-      setFormData({
-        bin_id: "",
-        message: "",
-        description: "",
-        severity: "info"
-      });
-      
+      setFormMessage("Alert sent successfully.");
+      setFormData({ bin_id: "", message: "" });
+
       setTimeout(() => {
         setShowForm(false);
         setFormMessage("");
         fetchAlerts();
-      }, 1500);
+      }, 1200);
     } catch (err) {
-      setFormMessage("❌ Failed to send alert");
+      setFormMessage(err.response?.data?.message || "Failed to send alert.");
       console.error(err);
     }
   };
 
-  const getSeverityIcon = (severity) => {
-    switch (severity?.toLowerCase()) {
-      case "critical":
-        return "🔴";
-      case "warning":
-        return "🟠";
-      case "info":
-        return "🔵";
-      default:
-        return "⚪";
-    }
-  };
-
-  const getSeverityColor = (severity) => {
-    switch (severity?.toLowerCase()) {
-      case "critical":
-        return "#dc2626";
-      case "warning":
-        return "#f59e0b";
-      case "info":
-        return "#3b82f6";
-      default:
-        return "#6b7280";
-    }
-  };
-
-  if (loading) return <div className="alerts-container"><p>Loading alerts...</p></div>;
+  if (loading) {
+    return <div className="alerts-container"><p>Loading alerts...</p></div>;
+  }
 
   return (
     <div className="alerts-container">
       <div className="page-header">
-        <h1>⚠️ Alerts</h1>
-        <p>{userRole === "admin" ? "Monitor all system alerts" : "Send and view your alerts"}</p>
+        <h1>Alerts</h1>
+        <p>
+          {userRole === "admin"
+            ? "Monitor every alert generated across the system."
+            : "Send manual alerts and review the ones you have submitted."}
+        </p>
       </div>
 
-      {/* Create Alert Form for Non-Admins */}
       {userRole !== "admin" && (
         <div className="alert-creation-section">
           {!showForm ? (
             <button className="btn btn-primary" onClick={() => setShowForm(true)}>
-              + Send New Alert
+              Send a new alert
             </button>
           ) : (
             <form className="alert-form" onSubmit={handleSubmitAlert}>
               {formMessage && (
-                <div className={formMessage.includes("✅") ? "success-message" : "error-message"}>
+                <div
+                  className={
+                    formMessage.toLowerCase().includes("success")
+                      ? "success-message"
+                      : "error-message"
+                  }
+                >
                   {formMessage}
                 </div>
               )}
 
               <div className="form-group">
-                <label>Bin *</label>
+                <label htmlFor="alert-bin">Bin</label>
                 <select
+                  id="alert-bin"
                   value={formData.bin_id}
-                  onChange={(e) => setFormData({ ...formData, bin_id: e.target.value })}
+                  onChange={(event) =>
+                    setFormData((current) => ({ ...current, bin_id: event.target.value }))
+                  }
                   required
                 >
                   <option value="">Select a bin</option>
-                  {bins.length > 0 ? (
-                    bins.map((bin) => (
-                      <option key={bin.id} value={bin.id}>
-                        Bin #{bin.id} - {bin.location || "No location"}
-                      </option>
-                    ))
-                  ) : (
-                    <option disabled>No bins available</option>
-                  )}
+                  {bins.map((bin) => (
+                    <option key={bin.id} value={bin.id}>
+                      Bin #{bin.id} - {bin.location || "No location"}
+                    </option>
+                  ))}
                 </select>
               </div>
 
               <div className="form-group">
-                <label>Alert Message *</label>
+                <label htmlFor="alert-message">Alert message</label>
                 <input
+                  id="alert-message"
                   type="text"
-                  placeholder="Brief description of the alert..."
+                  placeholder="What should the team know?"
                   value={formData.message}
-                  onChange={(e) => setFormData({ ...formData, message: e.target.value })}
+                  onChange={(event) =>
+                    setFormData((current) => ({ ...current, message: event.target.value }))
+                  }
                   required
                 />
               </div>
 
-              <div className="form-group">
-                <label>Details</label>
-                <textarea
-                  placeholder="Additional details (optional)"
-                  value={formData.description}
-                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  rows="3"
-                />
-              </div>
-
-              <div className="form-group">
-                <label>Severity</label>
-                <select
-                  value={formData.severity}
-                  onChange={(e) => setFormData({ ...formData, severity: e.target.value })}
-                >
-                  <option value="info">Info</option>
-                  <option value="warning">Warning</option>
-                  <option value="critical">Critical</option>
-                </select>
-              </div>
-
               <div className="form-buttons">
-                <button type="submit" className="btn btn-primary">Send Alert</button>
+                <button type="submit" className="btn btn-primary">
+                  Send alert
+                </button>
                 <button
                   type="button"
                   className="btn btn-secondary"
@@ -212,37 +172,47 @@ function Alerts() {
         </div>
       )}
 
-      {/* Alerts List */}
+      {error && <p className="error">{error}</p>}
+
       {alerts.length === 0 ? (
         <div className="empty-state">
-          <p>{userRole === "admin" ? "✨ No alerts in the system" : "✨ You haven't sent any alerts yet"}</p>
+          <p>{userRole === "admin" ? "No alerts in the system." : "You have not sent any alerts yet."}</p>
         </div>
       ) : (
         <div className="alerts-list">
-          {alerts.map((alert) => (
-            <div 
-              key={alert.id} 
-              className={`alert-item ${alert.severity?.toLowerCase() || "info"}`}
-              style={{ borderLeftColor: getSeverityColor(alert.severity) }}
-            >
-              <div className="alert-header">
-                <span className="alert-icon">{getSeverityIcon(alert.severity)}</span>
-                <div className="alert-title-section">
-                  <h3>{alert.message || alert.type || "Alert"}</h3>
-                  <p className="alert-bin">Bin #{alert.bin_id || "N/A"}</p>
+          {alerts.map((alert) => {
+            const severity = getSeverityFromAlert(alert);
+
+            return (
+              <div key={alert.id} className={`alert-item ${severity}`}>
+                <div className="alert-header">
+                  <span className="alert-icon">
+                    {severity === "critical" ? "🔴" : severity === "warning" ? "🟠" : "🔵"}
+                  </span>
+                  <div className="alert-title-section">
+                    <h3>{alert.message || "Alert"}</h3>
+                    <p className="alert-bin">Bin #{alert.bin_id || "N/A"}</p>
+                  </div>
+                  <span className="alert-severity">{severity}</span>
                 </div>
-                <span className="alert-severity">{alert.severity || "Info"}</span>
+
+                <div className="alert-body">
+                  <p>{alert.alert_type || "System alert"}</p>
+                </div>
+
+                <div className="alert-footer">
+                  <span className="alert-time">
+                    {alert.created_at
+                      ? new Date(alert.created_at).toLocaleString()
+                      : "Unknown time"}
+                  </span>
+                  <span className={`status-badge ${alert.status?.toLowerCase() || "open"}`}>
+                    {alert.status || "active"}
+                  </span>
+                </div>
               </div>
-              <div className="alert-body">
-                <p>{alert.description || "No additional details"}</p>
-              </div>
-              <div className="alert-footer">
-                <span className="alert-time">
-                  {alert.created_at ? new Date(alert.created_at).toLocaleString() : "Unknown time"}
-                </span>
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
     </div>
