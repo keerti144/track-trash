@@ -13,6 +13,7 @@ import Issues from "./pages/Issues";
 import Notifications from "./pages/Notifications";
 import AdminPanel from "./pages/AdminPanel";
 import MapPage from "./pages/Map";
+import Classify from "./pages/Classify";
 import "./App.css";
 
 function App() {
@@ -52,6 +53,16 @@ function App() {
                   <ProtectedRoute>
                     <main className="app-main">
                       <MapPage />
+                    </main>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/classify"
+                element={
+                  <ProtectedRoute>
+                    <main className="app-main">
+                      <Classify />
                     </main>
                   </ProtectedRoute>
                 }

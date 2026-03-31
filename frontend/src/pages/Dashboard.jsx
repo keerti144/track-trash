@@ -63,6 +63,8 @@ function Dashboard() {
           { to: "/map",    label: "Pin a location on the map" },
         ];
 
+  quickLinks.push({ to: "/classify", label: "Classify garbage" });
+
   if (loading) {
     return (
       <div className="dashboard-container">

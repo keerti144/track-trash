@@ -1,0 +1,65 @@
+.classify-container {
+  display: grid;
+  gap: 1.2rem;
+}
+
+.classify-card {
+  background: var(--surface);
+  border: 1px solid var(--surface-stroke);
+  border-radius: 18px;
+  box-shadow: var(--shadow-soft);
+  padding: 1.2rem;
+}
+
+.classify-form {
+  display: grid;
+  gap: 1rem;
+}
+
+.file-input {
+  padding: 0.6rem 0.75rem;
+}
+
+.preview-panel {
+  display: grid;
+  gap: 0.6rem;
+  padding-top: 0.25rem;
+}
+
+.classify-preview {
+  width: 100%;
+  max-height: 360px;
+  object-fit: contain;
+  border-radius: 14px;
+  border: 1px solid rgba(16, 185, 129, 0.14);
+  background: #ffffff;
+}
+
+.form-actions {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  align-items: center;
+  margin-top: 0.25rem;
+}
+
+.result-panel {
+  margin-top: 1rem;
+  padding: 1rem;
+  border-radius: 14px;
+  border: 1px solid rgba(16, 185, 129, 0.2);
+  background: linear-gradient(180deg, rgba(16, 185, 129, 0.08) 0%, rgba(16, 185, 129, 0.03) 100%);
+}
+
+.result-label {
+  color: var(--ink-soft);
+  font-weight: 700;
+  margin-bottom: 0.35rem;
+}
+
+.result-value {
+  font-size: 2rem;
+  font-weight: 900;
+  color: var(--accent-strong);
+}
+

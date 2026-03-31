@@ -29,6 +29,8 @@ function Navbar() {
       items.splice(4, 0, { to: "/collections", label: "Collections" });
     }
 
+    items.push({ to: "/classify", label: "Classify" });
+
     if (role === "admin") {
       items.push({ to: "/admin", label: "Admin", admin: true });
     }
